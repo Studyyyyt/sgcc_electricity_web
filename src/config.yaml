@@ -1,0 +1,20 @@
+electricity:
+  phone_number: ""
+  password: ""
+  deiver_impltcity_wait_time: 60
+  retry_times_limit: 5
+  login_expected_time: 60
+  retry_wait_time_offset_unit: 10
+  data_retention_days: 7
+
+db:
+  name: 'homeassistant.db'
+
+logger:
+  level: 'info'
+
+data:
+  path: '/app/data'
+
+web:
+  port: 8080

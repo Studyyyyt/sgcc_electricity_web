@@ -1,0 +1,17 @@
+requests==2.31.0
+selenium==4.5.0
+schedule==1.1.0
+Pillow==9.2.0
+undetected_chromedriver==3.4.7
+onnxruntime==1.17.3
+numpy==1.24.3
+python-dateutil
+Flask==2.2.3
+Werkzeug==2.2.3
+waitress
+Jinja2
+Flask-RESTful
+Flask-APScheduler
+jsonschema
+PyYAML
+six

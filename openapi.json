@@ -1,0 +1,194 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "sgcc_electricity",
+    "version": "1.0"
+  },
+  "paths": {
+    "/electricity/user_list": {
+      "get": {
+        "operationId": "getUserList",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        }
+      }
+    },
+    "/electricity/balance/{userId}": {
+      "get": {
+        "operationId": "getBalance",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Balance"
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        }
+      }
+    },
+    "/electricity/dailys/{userId}": {
+      "get": {
+        "operationId": "getDailys",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Dailys"
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        }
+      }
+    },
+    "/electricity/latest_month/{userId}": {
+      "get": {
+        "operationId": "getLatestMonth",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/LatestMonth"
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        }
+      }
+    },
+    "/electricity/this_year/{userId}": {
+      "get": {
+        "operationId": "getThisYear",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/ThisYear"
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "number"
+        },
+        "updateTime": {
+          "type": "integer"
+        }
+      }
+    },
+    "Dailys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "integer"
+          },
+          "usage": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "LatestMonth": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "integer"
+        },
+        "usage": {
+          "type": "number"
+        },
+        "charge": {
+          "type": "number"
+        }
+      }
+    },
+    "ThisYear": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "integer"
+        },
+        "usage": {
+          "type": "number"
+        },
+        "charge": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

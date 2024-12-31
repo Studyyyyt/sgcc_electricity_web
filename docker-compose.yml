@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  app:
+    image: crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web:latest
+    container_name: sgcc_electricity_web
+    ports:
+      - 8080:8080
+    environment:
+      - SET_CONTAINER_TIMEZONE=true
+      - CONTAINER_TIMEZONE=Asia/Shanghai
+    restart: unless-stopped
+    volumes:
+      #- ./src:/app
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
+    command: python3 main.py
