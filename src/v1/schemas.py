@@ -50,13 +50,14 @@ class RefNode(object):
 
 base_path = '/v1'
 
-definitions = {'definitions': {'Balance': {'type': 'object', 'properties': {'balance': {'type': 'number'}, 'updateTime': {'type': 'integer'}}}, 'Dailys': {'type': 'array', 'items': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}}}}, 'LatestMonth': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}, 'charge': {'type': 'number'}}}, 'ThisYear': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}, 'charge': {'type': 'number'}}}}, 'parameters': {}}
+definitions = {'definitions': {'Balance': {'type': 'object', 'properties': {'balance': {'type': 'number'}, 'updateTime': {'type': 'string'}}}, 'UserInfo': {'type': 'object', 'properties': {'location': {'type': 'string'}, 'balance': {'type': 'number'}, 'updateTime': {'type': 'string'}}}, 'Dailys': {'type': 'array', 'items': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}}}}, 'LatestMonth': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}, 'charge': {'type': 'number'}}}, 'ThisYear': {'type': 'object', 'properties': {'date': {'type': 'integer'}, 'usage': {'type': 'number'}, 'charge': {'type': 'number'}}}}, 'parameters': {}}
 
 validators = {
 }
 
 filters = {
     ('electricity_user_list', 'GET'): {200: {'headers': None, 'schema': {'type': 'array', 'items': {'type': 'string'}}}, 400: {'headers': None, 'schema': None}},
+    ('electricity_user_info_userId', 'GET'): {200: {'headers': None, 'schema': {'$ref': '#/definitions/UserInfo'}}, 400: {'headers': None, 'schema': None}},
     ('electricity_balance_userId', 'GET'): {200: {'headers': None, 'schema': {'$ref': '#/definitions/Balance'}}, 400: {'headers': None, 'schema': None}},
     ('electricity_dailys_userId', 'GET'): {200: {'headers': None, 'schema': {'$ref': '#/definitions/Dailys'}}, 400: {'headers': None, 'schema': None}},
     ('electricity_latest_month_userId', 'GET'): {200: {'headers': None, 'schema': {'$ref': '#/definitions/LatestMonth'}}, 400: {'headers': None, 'schema': None}},

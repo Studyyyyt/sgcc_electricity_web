@@ -312,8 +312,10 @@ class DataFetcher:
                     time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
                     self._choose_current_userid(driver,userid_index)
                     time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-                    current_userid = self._get_current_userid(driver)
+                    user_info = self._get_current_user_info(driver)
 
+                    current_userid = user_info['user_id']
+                    current_user_loaction = user_info['user_location']
                     data[current_userid] = {}
 
                     if current_userid in config.electricity['ignore_user_id']:
@@ -323,6 +325,7 @@ class DataFetcher:
                         ### get data 
                         balance, last_daily_date, last_daily_usage, daily_date, daily_usages, yearly_charge, yearly_usage, month, month_charge, month_usage  = self._get_all_data(driver, user_id, userid_index)
 
+                        data[current_userid]['location'] = current_user_loaction
                         data[current_userid]['balance'] = balance
                         data[current_userid]['last_daily'] = {'date': last_daily_date, 'usage': last_daily_usage}
                         data[current_userid]['daily'] = [{'date': daily_date[i], 'usage': daily_usages[i]} for i in range(len(daily_date))] 
@@ -374,6 +377,14 @@ class DataFetcher:
             logging.error(
                 f"Webdriver quit abnormly, reason: {e}. get user_id list failed.")
             driver.quit()
+    
+    def _get_current_user_info(self, driver):
+        user_id = driver.find_element(By.XPATH, '//*[@id="app"]/div/div/article/div/div/div[2]/div/div/div[1]/div[2]/div/div/div/div[2]/div/div[1]/div/ul/div/li[1]/span[2]').text
+        user_location = driver.find_element(By.XPATH, '//*[@id="app"]/div/div/article/div/div/div[2]/div/div/div[1]/div[2]/div/div/div/div[2]/div/div[1]/div/ul/div/li[2]/span[2]').text
+        return {
+            'user_id': user_id
+            ,'user_location': user_location
+        }
 
     def _choose_current_userid(self, driver, userid_index):
         self._click_button(driver, By.CLASS_NAME, "el-input__suffix")

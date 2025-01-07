@@ -2,72 +2,109 @@ import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta
-import config
+# import config
 
 class Electricity:
     def __init__(self, db_name):
+        
         self.db_name = db_name
         self.is_db_new_create = False
 
-        db_path = config.data_path + os.path.sep + self.db_name
+        # db_path = config.data_path + os.path.sep + self.db_name
+        db_path = self.db_name
         if not os.path.exists(db_path):
             logging.info(f"Database of {db_path} not exists, will created!")
             self.is_db_new_create = True
-            self.connect = sqlite3.connect(db_path, check_same_thread=False)
-            self._create_tables()
-        else:
-            self.connect = sqlite3.connect(db_path, check_same_thread=False)
 
-    def _create_tables(self):
+        self.connect = sqlite3.connect(db_path, check_same_thread=False)
+        self._init_tables()
+
+    def _table_exists(self, table_name):
+        cursor = self.connect.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        return cursor.fetchone() is not None
+
+    def _init_tables(self):
+        
         logging.info(f"Start create tables...")
         cursor = self.connect.cursor()
-        sql = """
-           create table daily (
-               user_code text not null
-               ,date date not null
-               ,usage real not null
-               ,create_time date not null default current_timestamp
-               ,update_time date not null default current_timestamp
-               ,primary key(user_code, date)
-           );
-        """
-        cursor.execute(sql)
 
-        sql = """
-           create table balance (
-               user_code text primary key not null
-               ,balance real not null
-               ,create_time date not null default current_timestamp
-               ,update_time date not null default current_timestamp
-           );
-        """
-        cursor.execute(sql)
+        if not self._table_exists('daily'):
+            sql = """
+            create table daily (
+                user_code text not null
+                ,date date not null
+                ,usage real not null
+                ,create_time date not null default current_timestamp
+                ,update_time date not null default current_timestamp
+                ,primary key(user_code, date)
+            );
+            """
+            cursor.execute(sql)
 
-        sql = """
-           create table month (
-               user_code text not null
-               ,date date not null
-               ,usage real not null
-               ,charge real not null
-               ,create_time date not null default current_timestamp
-               ,update_time date not null default current_timestamp
-               ,primary key(user_code, date)
-           );
-        """
-        cursor.execute(sql)
+        if not self._table_exists('user_info'):
+            sql = """
+            create table user_info (
+                user_code text primary key not null
+                ,location text
+                ,balance real not null
+                ,create_time date not null default current_timestamp
+                ,update_time date not null default current_timestamp
+            );
+            """
+            cursor.execute(sql)
 
-        sql = """
-           create table year (
-               user_code text not null
-               ,date date not null
-               ,usage real not null
-               ,charge real not null
-               ,create_time date not null default current_timestamp
-               ,update_time date not null default current_timestamp
-               ,primary key(user_code, date)
-           );
-        """
-        cursor.execute(sql)
+        if self._table_exists('balance'):
+            # sql = """
+            # create table balance (
+            #     user_code text primary key not null
+            #     ,balance real not null
+            #     ,create_time date not null default current_timestamp
+            #     ,update_time date not null default current_timestamp
+            # );
+            # """
+            sql = """
+                insert into user_info (user_code, balance, create_time, update_time)
+                select
+                    user_code
+                    ,balance
+                    ,create_time
+                    ,update_time
+                from balance;
+            """
+            cursor.execute(sql)
+            sql = """
+                drop table balance;
+            """
+            cursor.execute(sql)
+
+        if not self._table_exists('month'):
+            sql = """
+            create table month (
+                user_code text not null
+                ,date date not null
+                ,usage real not null
+                ,charge real not null
+                ,create_time date not null default current_timestamp
+                ,update_time date not null default current_timestamp
+                ,primary key(user_code, date)
+            );
+            """
+            cursor.execute(sql)
+
+        if not self._table_exists('year'):
+            sql = """
+            create table year (
+                user_code text not null
+                ,date date not null
+                ,usage real not null
+                ,charge real not null
+                ,create_time date not null default current_timestamp
+                ,update_time date not null default current_timestamp
+                ,primary key(user_code, date)
+            );
+            """
+            cursor.execute(sql)
     
         cursor.close()
         logging.info(f"End create tables.")
@@ -107,12 +144,28 @@ class Electricity:
     def insert_balance_info(self, user_code: str, balance: float):
         cursor = self.connect.cursor()
         sql = f"""
-            insert or replace into balance(user_code, balance, update_time)
+            insert or replace into user_info(user_code, balance, update_time)
             values
             ('{user_code}', {balance}, current_timestamp)
             on conflict(user_code) do update set
-            balance = excluded.balance
+            location = location
+            ,balance = excluded.balance
+            ,create_time = create_time
             ,update_time = excluded.update_time
+        """
+        cursor.execute(sql)
+        self.connect.commit()
+        cursor.close()
+
+    def insert_location_info(self, user_code: str, location: str):
+        
+        cursor = self.connect.cursor()
+        sql = f"""
+            insert or replace into user_info(user_code, balance, location)
+            values
+            ('{user_code}', -999, '{location}')
+            on conflict(user_code) do update set
+            location = excluded.location
         """
         cursor.execute(sql)
         self.connect.commit()
@@ -170,7 +223,7 @@ class Electricity:
             select
                 balance
                 ,update_time
-            from balance
+            from user_info
             where user_code = {userId}
         """
         balance = self.__exe_select(sql)
@@ -179,6 +232,26 @@ class Electricity:
             result = {
                 'balance': item[0]
                 ,'updateTime': (datetime.strptime(item[1], "%Y-%m-%d %H:%M:%S") + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+        return result
+    
+    def get_user_info(self, userId: str):
+        sql = f"""
+            select
+                location
+                ,balance
+                ,update_time
+            from user_info
+            where user_code = {userId}
+        """
+        location = self.__exe_select(sql)
+        result = {}
+        for item in location:
+            result = {
+                'location': item[0]
+                ,'balance': item[1]
+                ,'updateTime': (datetime.strptime(item[2], "%Y-%m-%d %H:%M:%S") + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
             }
 
         return result
@@ -260,4 +333,5 @@ if __name__ == "__main__":
     saver.insert_month_info("123", "2024-12-13", 4.7, 10.4)
     saver.insert_year_info("123", "2024-12-13", 8.9, 19.0)
     saver.insert_balance_info("123", 1000.6)
+    saver.insert_location_info("123", "北京市")
     saver.close()

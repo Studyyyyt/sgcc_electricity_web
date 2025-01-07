@@ -49,6 +49,9 @@ def fetch_electricity_task():
             try:
                 if user_data['balance'] is not None:
                     electricity.insert_balance_info(user_id, user_data['balance'])
+
+                if user_data['location'] is not None:
+                    electricity.insert_location_info(user_id, user_data['location'])
                 
                 if user_data['last_daily'] is not None:
                     electricity.insert_daily_info(user_id, user_data['last_daily']['date'], user_data['last_daily']['usage'])
