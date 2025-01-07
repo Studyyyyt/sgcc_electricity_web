@@ -15,7 +15,7 @@ logger:
   level: 'info'
 
 data:
-  path: '/app/data'
+  path: '/data'
 
 web:
   port: 8080

@@ -12,6 +12,6 @@ services:
     restart: unless-stopped
     volumes:
       #- ./src:/app
-      - ./data:/app/data
+      - ./data:/data
       - ./config.yaml:/app/config.yaml
     command: python3 main.py

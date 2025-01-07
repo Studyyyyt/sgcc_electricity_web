@@ -9,6 +9,7 @@ from logging.config import dictConfig
 from datetime import datetime, timedelta
 import traceback
 import config
+import argparse
 
 import v1
 from electricity.data_fetcher import DataFetcher
@@ -18,7 +19,7 @@ dictConfig({
     'version': 1,
     'formatters': {
         'default': {
-            'format': "%(asctime)s  %(levelname)] %(message)s",
+            'format': "[%(levelname)s]%(asctime)s %(filename)s:%(lineno)d %(message)s",
         }
     },
     'handlers': {
@@ -81,12 +82,19 @@ def index():
     return 'Hello, World!'
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='sgcc electricity web args')
+    parser.add_argument("-r", "--run", action = "store_true")
+    args = parser.parse_args()
+
     app.register_blueprint(v1.bp, url_prefix='/v1')
 
     scheduler.init_app(app)
 
-    if electricity.is_db_new_create:
-        logging.info("db is new created, will init electricity data!!!")
+    if electricity.is_db_new_create or args.run:
+        if electricity.is_db_new_create:
+            logging.info("db is new created, will init electricity data!!!")
+        elif args.run:
+            logging.info("you add args -r, will get electricity data!!!")
         scheduler.add_job(func=fetch_electricity_task, trigger='date', next_run_time=(datetime.now() + timedelta(seconds=10)), id='init_electricity_task', misfire_grace_time=900)
     
     scheduler.start()
