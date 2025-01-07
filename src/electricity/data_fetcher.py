@@ -10,7 +10,7 @@ import base64
 import json
 import requests
 import undetected_chromedriver as uc
-
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
@@ -197,54 +197,6 @@ class DataFetcher:
             return result["message"]
         return ""
 
-    def fetch(self):
-        """the entry, only retry logic here """
-        try:
-            return self._fetch()
-        except Exception as e:
-            traceback.print_exc()
-            logging.error(
-                f"Webdriver quit abnormly, reason: {e}. {self.RETRY_TIMES_LIMIT} retry times left.")
-
-    def _fetch(self):
-        """main logic here"""
-        if platform.system() == 'Windows':
-            driverfile_path = r'C:\Users\mxwang\Project\msedgedriver.exe'
-            driver = webdriver.Edge(executable_path=driverfile_path)
-        else:
-            driver = self._get_webdriver()
-        
-        driver.maximize_window() 
-        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-        logging.info("Webdriver initialized.")
-
-        try:
-            if DEBUG:
-                driver.get(LOGIN_URL)
-                pass
-            else:
-                if self._login(driver):
-                    logging.info("login successed !")
-                else:
-                    logging.info("login unsuccessed !")
-            logging.info(f"Login successfully on {LOGIN_URL}")
-            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-            user_id_list = self._get_user_ids(driver)
-            logging.info(f"There are {len(user_id_list)} users in total, there user_id is: {user_id_list}")
-            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-            balance_list = self._get_electric_balances(driver, user_id_list)  #
-            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-            ### get data except electricity charge balance
-            last_daily_date_list, last_daily_usage_list, daily_usage_list, yearly_charge_list, yearly_usage_list, month_list, month_usage_list, month_charge_list  = self._get_other_data(driver, user_id_list)
-            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-            driver.quit()
-
-            logging.info("Webdriver quit after fetching data successfully.")
-            return user_id_list, balance_list, last_daily_date_list, last_daily_usage_list, daily_usage_list, yearly_charge_list, yearly_usage_list, month_list, month_usage_list, month_charge_list 
-
-        finally:
-            driver.quit()
-
     def _get_webdriver(self):
         chrome_options = Options()
         chrome_options.add_argument('--incognito')
@@ -314,159 +266,212 @@ class DataFetcher:
                 return True
         
         logging.error(f"Login failed, maybe caused by Sliding CAPTCHA recognition failed")
-        raise Exception(
-            "Login failed, maybe caused by 1.incorrect phone_number and password, please double check. or 2. network, please mnodify LOGIN_EXPECTED_TIME in .env and run docker compose up --build.")
-        return True
+        return False
+    
+    def fetch(self):
+        """the entry, only retry logic here """
+        try:
+            return self._fetch()
+        except Exception as e:
+            traceback.print_exc()
+            logging.error(
+                f"Webdriver quit abnormly, reason: {e}. {self.RETRY_TIMES_LIMIT} retry times left.")
+
+    def _fetch(self):
+        """main logic here"""
+        if platform.system() == 'Windows':
+            driverfile_path = r'C:\Users\mxwang\Project\msedgedriver.exe'
+            driver = webdriver.Edge(executable_path=driverfile_path)
+        else:
+            driver = self._get_webdriver()
         
-    def _get_electric_balances(self, driver, user_id_list):
-
-        balance_list = []
-
-        # switch to electricity charge balance page
-        driver.get(BALANCE_URL)
+        driver.maximize_window() 
         time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-        # get electricity charge balance for each user id
-        for i in range(1, len(user_id_list) + 1):
-            balance = self._get_eletric_balance(driver)
-            if (balance is None):
-                logging.info(f"Get electricity charge balance for {user_id_list[i - 1]} failed, Pass.")
+        logging.info("Webdriver initialized.")
+
+        try:
+            if DEBUG:
+                driver.get(LOGIN_URL)
+                pass
             else:
-                logging.info(
-                    f"Get electricity charge balance for {user_id_list[i - 1]} successfully, balance is {balance} CNY.")
-            balance_list.append(balance)
+                if self._login(driver):
+                    logging.info("login successed !")
+                else:
+                    logging.info("login unsuccessed !")
+            logging.info(f"Login successfully on {LOGIN_URL}")
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            user_id_list = self._get_user_ids(driver)
+            logging.info(f"There are {len(user_id_list)} users in total, there user_id is: {user_id_list}")
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            
+            data = {}
+            for userid_index, user_id in enumerate(user_id_list):   
+                try: 
+                    # switch to electricity charge balance page
+                    driver.get(BALANCE_URL) 
+                    time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+                    self._choose_current_userid(driver,userid_index)
+                    time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+                    current_userid = self._get_current_userid(driver)
 
-            # swtich to next userid
-            if (i != len(user_id_list)):
-                self._click_button(driver, By.CLASS_NAME, "el-input__suffix")
-                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-                self._click_button(driver, By.XPATH, f"//ul[@class='el-scrollbar__view el-select-dropdown__list']/li[{i + 1}]")
+                    data[current_userid] = {}
 
-        return balance_list
+                    if current_userid in config.electricity['ignore_user_id']:
+                        logging.info(f"The user ID {current_userid} will be ignored in user_id_list")
+                        continue
+                    else:
+                        ### get data 
+                        balance, last_daily_date, last_daily_usage, daily_date, daily_usages, yearly_charge, yearly_usage, month, month_charge, month_usage  = self._get_all_data(driver, user_id, userid_index)
 
-    def _get_other_data(self, driver, user_id_list):
-        last_daily_date_list = []
-        last_daily_usage_list = []
-        daily_usage_list = []
-        yearly_usage_list = []
-        yearly_charge_list = []
-        month_list = []
-        month_charge_list = []
-        month_usage_list = []
+                        data[current_userid]['balance'] = balance
+                        data[current_userid]['last_daily'] = {'date': last_daily_date, 'usage': last_daily_usage}
+                        data[current_userid]['daily'] = [{'date': daily_date[i], 'usage': daily_usages[i]} for i in range(len(daily_date))] 
+                        data[current_userid]['month'] = [{'date': month[i], 'charge': month_charge[i], 'usage': month_usage[i]} for i in range(len(month))]
+                        data[current_userid]['yearly'] = {'charge': yearly_charge, 'usage': yearly_usage}
+                        
+                        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+                except Exception as e:
+                    if (userid_index != len(user_id_list)):
+                        logging.info(f"The current user {user_id} data fetching failed {e}, the next user data will be fetched.")
+                    else:
+                        logging.info(f"The user {user_id} data fetching failed, {e}")
+                        logging.info("Webdriver quit after fetching data successfully.")
+                    continue 
+
+            logging.info("Webdriver quit after fetching data successfully.")
+            return data
+        finally:
+            driver.quit()  
+        
+    def _get_user_ids(self, driver):
+        try:
+            # 刷新网页
+            driver.refresh()
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT*2)
+            element = WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.presence_of_element_located((By.CLASS_NAME, 'el-dropdown')))
+            # click roll down button for user id
+            self._click_button(driver, By.XPATH, "//div[@class='el-dropdown']/span")
+            logging.debug(f'''self._click_button(driver, By.XPATH, "//div[@class='el-dropdown']/span")''')
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            # wait for roll down menu displayed
+            target = driver.find_element(By.CLASS_NAME, "el-dropdown-menu.el-popper").find_element(By.TAG_NAME, "li")
+            logging.debug(f'''target = driver.find_element(By.CLASS_NAME, "el-dropdown-menu.el-popper").find_element(By.TAG_NAME, "li")''')
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.visibility_of(target))
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            logging.debug(f'''WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.visibility_of(target))''')
+            WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(
+                EC.text_to_be_present_in_element((By.XPATH, "//ul[@class='el-dropdown-menu el-popper']/li"), ":"))
+            time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+
+            # get user id one by one
+            userid_elements = driver.find_element(By.CLASS_NAME, "el-dropdown-menu.el-popper").find_elements(By.TAG_NAME, "li")
+            userid_list = []
+            for element in userid_elements:
+                userid_list.append(re.findall("[0-9]+", element.text)[-1])
+            return userid_list
+        except Exception as e:
+            logging.error(
+                f"Webdriver quit abnormly, reason: {e}. get user_id list failed.")
+            driver.quit()
+
+    def _choose_current_userid(self, driver, userid_index):
+        self._click_button(driver, By.CLASS_NAME, "el-input__suffix")
+        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+        self._click_button(driver, By.XPATH, f"/html/body/div[2]/div[1]/div[1]/ul/li[{userid_index+1}]/span")
+            
+    def _get_all_data(self, driver, user_id, userid_index):
+        balance = self._get_electric_balance(driver)
+        if (balance is None):
+            logging.info(f"Get electricity charge balance for {user_id} failed, Pass.")
+        else:
+            logging.info(
+                f"Get electricity charge balance for {user_id} successfully, balance is {balance} CNY.")
+        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
         # swithc to electricity usage page
         driver.get(ELECTRIC_USAGE_URL)
-
-        # get data for each user id
-        for i in range(1, len(user_id_list) + 1):
-
-            yearly_usage, yearly_charge = self._get_yearly_data(driver)
-
-            if yearly_usage is None:
-                logging.error(f"Get year power usage for {user_id_list[i - 1]} failed, pass")
-            else:
-                logging.info(
-                    f"Get year power usage for {user_id_list[i - 1]} successfully, usage is {yearly_usage} kwh")
-            if yearly_charge is None:
-                logging.error(f"Get year power charge for {user_id_list[i - 1]} failed, pass")
-            else:
-                logging.info(
-                    f"Get year power charge for {user_id_list[i - 1]} successfully, yealrly charge is {yearly_charge} CNY")
-
-            # get month usage
-            month, month_usage, month_charge = self._get_month_usage(driver)
-            if month is None:
-                logging.error(f"Get month power usage for {user_id_list[i - 1]} failed, pass")
-            else:
-                for m in range(len(month)):
-                    logging.info(
-                        f"Get month power charge for {user_id_list[i - 1]} successfully, {month[m]} usage is {month_usage[m]} KWh, charge is {month_charge[m]} CNY.")
-            # get yesterday usage
-            last_daily_datetime, last_daily_usage = self._get_yesterday_usage(driver)
-
-            # 新增储存用电量
-            # if self.enable_database_storage:
-            #     self.save_usage_data(driver, user_id_list[i - 1])
-
-            daily_usage = self._get_daily_usage(driver)
-
-            if last_daily_usage is None:
-                logging.error(f"Get daily power consumption for {user_id_list[i - 1]} failed, pass")
-            else:
-                logging.info(
-                    f"Get daily power consumption for {user_id_list[i - 1]} successfully, {last_daily_datetime} usage is {last_daily_usage} kwh.")
-
-            last_daily_date_list.append(last_daily_datetime)
-            last_daily_usage_list.append(last_daily_usage)
-            daily_usage_list.append(daily_usage)
-            yearly_charge_list.append(yearly_charge)
-            yearly_usage_list.append(yearly_usage)
-            if month:
-                month_list.append(month[-1])
-            else:
-                month_list.append(None)
-            if month_charge:
-                month_charge_list.append(month_charge[-1])
-            else:
-                month_charge_list.append(None)
-            if month_usage:
-                month_usage_list.append(month_usage[-1])
-            else:
-                month_usage_list.append(None)
-
-            # switch to next user id
-            if i != len(user_id_list):
-                self._click_button(driver, By.CLASS_NAME, "el-input__suffix")
-                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-                self._click_button(driver, By.XPATH,
-                                   f"//body/div[@class='el-select-dropdown el-popper']//ul[@class='el-scrollbar__view el-select-dropdown__list']/li[{i + 1}]")
-
-        return last_daily_date_list, last_daily_usage_list, daily_usage_list, yearly_charge_list, yearly_usage_list, month_list, month_usage_list, month_charge_list
-
-    def _get_user_ids(self, driver):
-
-        # click roll down button for user id
-        self._click_button(driver, By.XPATH, "//div[@class='el-dropdown']/span")
         time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-        # wait for roll down menu displayed
-        target = driver.find_element(By.CLASS_NAME, "el-dropdown-menu.el-popper").find_element(By.TAG_NAME, "li")
-        WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.visibility_of(target))
-        WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(
-            EC.text_to_be_present_in_element((By.XPATH, "//ul[@class='el-dropdown-menu el-popper']/li"), ":"))
+        self._choose_current_userid(driver, userid_index)
+        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+        # get data for each user id
+        yearly_usage, yearly_charge = self._get_yearly_data(driver)
 
-        # get user id one by one
-        userid_elements = driver.find_element(By.CLASS_NAME, "el-dropdown-menu.el-popper").find_elements(By.TAG_NAME, "li")
-        userid_list = []
-        for element in userid_elements:
-            userid_list.append(re.findall("[0-9]+", element.text)[-1])
-        return userid_list
+        if yearly_usage is None:
+            logging.error(f"Get year power usage for {user_id} failed, pass")
+        else:
+            logging.info(
+                f"Get year power usage for {user_id} successfully, usage is {yearly_usage} kwh")
+        if yearly_charge is None:
+            logging.error(f"Get year power charge for {user_id} failed, pass")
+        else:
+            logging.info(
+                f"Get year power charge for {user_id} successfully, yealrly charge is {yearly_charge} CNY")
 
-    def _get_eletric_balance(self, driver):
+        # 按月获取数据
+        month, month_usage, month_charge = self._get_month_usage(driver)
+        if month is None:
+            logging.error(f"Get month power usage for {user_id} failed, pass")
+        else:
+            for m in range(len(month)):
+                logging.info(f"Get month power charge for {user_id} successfully, {month[m]} usage is {month_usage[m]} KWh, charge is {month_charge[m]} CNY.")
+        # get yesterday usage
+        last_daily_date, last_daily_usage = self._get_yesterday_usage(driver)
+        if last_daily_usage is None:
+            logging.error(f"Get last daily power consumption for {user_id} failed, pass")
+        else:
+            logging.info(
+                f"Get daily power consumption for {user_id} successfully, , {last_daily_date} usage is {last_daily_usage} kwh.")
+
+        daily_date, daily_usages = self._get_daily_usage_data(driver)
+        if daily_date is None:
+            logging.error(f"Get daily power consumption for {user_id} failed, pass")
+        else:
+            logging.info(
+                f"Get daily power consumption for {user_id} successfully, {daily_date}:{daily_usages}")
+        
+
+        return balance, last_daily_date, last_daily_usage, daily_date, daily_usages, yearly_charge, yearly_usage, month, month_charge, month_usage
+    
+    def _get_electric_balance(self, driver):
         try:
             balance = driver.find_element(By.CLASS_NAME, "num").text
-            return float(balance)
+            balance_text = driver.find_element(By.CLASS_NAME, "amttxt").text
+            if "欠费" in balance_text :
+                return -float(balance)
+            else:
+                return float(balance)
         except:
             return None
 
     def _get_yearly_data(self, driver):
 
         try:
+            if datetime.now().month == 1:
+                self._click_button(driver, By.XPATH, '//*[@id="pane-first"]/div[1]/div/div[1]/div/div/input')
+                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+                span_element = driver.find_element(By.XPATH, f"//span[contains(text(), '{datetime.now().year - 1}')]")
+                span_element.click()
+                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
             self._click_button(driver, By.XPATH, "//div[@class='el-tabs__nav is-top']/div[@id='tab-first']")
             time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
             # wait for data displayed
             target = driver.find_element(By.CLASS_NAME, "total")
             WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.visibility_of(target))
-        except:
+        except Exception as e:
+            logging.error(f"The yearly data get failed : {e}")
             return None, None
 
         # get data
         try:
             yearly_usage = driver.find_element(By.XPATH, "//ul[@class='total']/li[1]/span").text
-
-        except:
+        except Exception as e:
+            logging.error(f"The yearly_usage data get failed : {e}")
             yearly_usage = None
 
         try:
             yearly_charge = driver.find_element(By.XPATH, "//ul[@class='total']/li[2]/span").text
-        except:
+        except Exception as e:
+            logging.error(f"The yearly_charge data get failed : {e}")
             yearly_charge = None
 
         return yearly_usage, yearly_charge
@@ -487,7 +492,8 @@ class DataFetcher:
                                                 "//div[@class='el-tab-pane dayd']//div[@class='el-table__body-wrapper is-scrolling-none']/table/tbody/tr[1]/td[1]/div")
             last_daily_date = date_element.text # 获取最近一次用电量的日期
             return last_daily_date, float(usage_element.text)
-        except:
+        except Exception as e:
+            logging.error(f"The yesterday data get failed : {e}")
             return None
 
     def _get_month_usage(self, driver):
@@ -496,6 +502,12 @@ class DataFetcher:
         try:
             self._click_button(driver, By.XPATH, "//div[@class='el-tabs__nav is-top']/div[@id='tab-first']")
             time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+            if datetime.now().month == 1:
+                self._click_button(driver, By.XPATH, '//*[@id="pane-first"]/div[1]/div/div[1]/div/div/input')
+                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+                span_element = driver.find_element(By.XPATH, f"//span[contains(text(), '{datetime.now().year - 1}')]")
+                span_element.click()
+                time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
             # wait for month displayed
             target = driver.find_element(By.CLASS_NAME, "total")
             WebDriverWait(driver, self.DRIVER_IMPLICITY_WAIT_TIME).until(EC.visibility_of(target))
@@ -512,14 +524,16 @@ class DataFetcher:
                 usage.append(month_element[i][1])
                 charge.append(month_element[i][2])
             return month, usage, charge
-        except:
+        except Exception as e:
+            logging.error(f"The month data get failed : {e}")
             return None,None,None
 
-    # 增加储存用电量的到mongodb的函数
-    def _get_daily_usage(self, driver):
-    #def save_usage_data(self, driver, user_id):
+    # 增加获取每日用电量的函数
+    def _get_daily_usage_data(self, driver):
         """储存指定天数的用电量"""
-        retention_days = config.electricity['data_retention_days']  # 默认值为7天
+        retention_days = config.electricity['data_retention_days']
+        self._click_button(driver, By.XPATH, "//div[@class='el-tabs__nav is-top']/div[@id='tab-second']")
+        time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
 
         # 7 天在第一个 label, 30 天 开通了智能缴费之后才会出现在第二个, (sb sgcc)
         if retention_days == 7:
@@ -540,21 +554,18 @@ class DataFetcher:
         # 获取用电量的数据
         days_element = driver.find_elements(By.XPATH,
                                             "//*[@id='pane-second']/div[2]/div[2]/div[1]/div[3]/table/tbody/tr")  # 用电量值列表
-
-        # 连接数据库集合
-        # self.connect_user_db(user_id)
-
-        daily_usage = []
+        date = []
+        usages = []
         # 将用电量保存为字典
         for i in days_element:
             day = i.find_element(By.XPATH, "td[1]/div").text
             usage = i.find_element(By.XPATH, "td[2]/div").text
-
-            dic = {'date': day, 'usage': float(usage)}
-            daily_usage.append(dic)
-            logging.info(f"The electricity consumption of {usage}KWh on {day} successfully!")
-
-        return daily_usage
+            if usage != "":
+                usages.append(usage)
+                date.append(day)
+            else:
+                logging.info(f"The electricity consumption of {usage} get nothing")
+        return date, usages
 
     @staticmethod
     def _click_button(driver, button_search_type, button_search_key):

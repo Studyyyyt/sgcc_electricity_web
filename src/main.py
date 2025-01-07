@@ -41,28 +41,31 @@ scheduler = APScheduler()
 @scheduler.task('cron', id='fetch_electricity_task', hour='7,19', misfire_grace_time=900)
 def fetch_electricity_task():
     try:
-        user_id_list, balance_list, last_daily_date_list, last_daily_usage_list, daily_usage_list, yearly_charge_list, yearly_usage_list, month_list, month_usage_list, month_charge_list = fetcher.fetch()
+        data = fetcher.fetch()
         
-        for i in range(0, len(user_id_list)):
+        for user_id in data.keys():
+            user_data = data[user_id]
+
             try:
-                if balance_list[i] is not None:
-                    electricity.insert_balance_info(user_id_list[i], balance_list[i])
+                if user_data['balance'] is not None:
+                    electricity.insert_balance_info(user_id, user_data['balance'])
                 
-                if last_daily_usage_list[i] is not None:
-                    electricity.insert_daily_info(user_id_list[i], last_daily_date_list[i], last_daily_usage_list[i])
+                if user_data['last_daily'] is not None:
+                    electricity.insert_daily_info(user_id, user_data['last_daily']['date'], user_data['last_daily']['usage'])
                 
-                if daily_usage_list is not None:
-                    electricity.insert_all_daily_info(user_id_list[i], daily_usage_list[i])
+                if user_data['daily'] is not None:
+                    electricity.insert_all_daily_info(user_id, user_data['daily'])
 
-                if yearly_usage_list[i] is not None and yearly_charge_list[i] is not None:
-                    electricity.insert_year_info(user_id_list[i], str(datetime.now().year) + '-01-01', yearly_usage_list[i], yearly_charge_list[i])
+                if user_data['yearly'] is not None:
+                    electricity.insert_year_info(user_id, str(datetime.now().year) + '-01-01', user_data['yearly']['usage'], user_data['yearly']['charge'])
 
-                if month_charge_list[i] is not None and month_usage_list[i] is not None:
-                    electricity.insert_month_info(user_id_list[i], month_list[i][0:7] + '-01', month_usage_list[i], month_charge_list[i])
+                if user_data['month'] is not None:
+                    for item in user_data['month']:
+                        electricity.insert_month_info(user_id, item['date'][0:7] + '-01', item['usage'], item['charge'])
 
-                logging.info(f"update {user_id_list[i]} status successfully!")
+                logging.info(f"update {user_id} status successfully!")
             except Exception as e:
-                logging.error(f"update {user_id_list[i]} status failed, reason is {e}")
+                logging.error(f"update {user_id} status failed, reason is {e}")
                 traceback.print_exc()
 
         logging.info("state-refresh task run successfully!")

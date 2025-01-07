@@ -247,7 +247,7 @@ class Electricity:
         return result
 
 if __name__ == "__main__":
-    saver = DataSaveer("test.db")
+    saver = Electricity("test.db")
     daily_list = [
         {'date': '2024-12-06', 'usage': 1.0}
         ,{'date': '2024-12-07', 'usage': 2.0}
