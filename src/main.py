@@ -29,7 +29,7 @@ dictConfig({
         }
     },
     'root': {
-        'level': config.logger['level'].upper(),
+        'level': config.logger['level'],
         'handlers': ['console']
     }
 })

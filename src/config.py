@@ -19,7 +19,9 @@ electricity = {
 
 db = data['db']
 
-logger = data['logger']
+logger = {
+    'level': data['logger'].get('level', 'INFO').upper()
+}
 
 data_path = data['data']['path']
 os.makedirs(data_path, exist_ok=True) 
@@ -27,3 +29,15 @@ os.makedirs(data_path, exist_ok=True)
 web = {
     'port': int(data['web'].get('port', '8080'))
 }
+
+if __name__ == '__main__':
+    print('---electricity---')
+    print(electricity)
+    print('---db---')
+    print(db)
+    print('---logger---')
+    print(logger)
+    print('---data_path---')
+    print(data_path)
+    print('---web---')
+    print(web)
