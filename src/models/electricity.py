@@ -11,7 +11,6 @@ class Electricity:
         self.is_db_new_create = False
 
         db_path = config.data_path + os.path.sep + self.db_name
-        db_path = self.db_name
         if not os.path.exists(db_path):
             logging.info(f"Database of {db_path} not exists, will created!")
             self.is_db_new_create = True
