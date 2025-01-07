@@ -210,7 +210,7 @@ class Electricity:
         sql = """
             select
                 user_code
-            from balance
+            from user_info
         """
         user_code_list = self.__exe_select(sql)
         result = []
