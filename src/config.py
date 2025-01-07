@@ -5,7 +5,7 @@ import platform
 with open("config.yaml", "r") as file:
     data = yaml.safe_load(file)
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 DEBUG = False
 if platform.system() == 'Windows':
     DEBUG = True
