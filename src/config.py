@@ -1,10 +1,14 @@
 import yaml
 import os
+import platform
 
 with open("config.yaml", "r") as file:
     data = yaml.safe_load(file)
 
 VERSION = '0.0.1'
+DEBUG = False
+if platform.system() == 'Windows':
+    DEBUG = True
 
 electricity = {
     'phone_number': data['electricity']['phone_number']

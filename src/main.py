@@ -87,6 +87,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     app.register_blueprint(v1.bp, url_prefix='/v1')
+    app.json.ensure_ascii = False
 
     scheduler.init_app(app)
 

@@ -28,8 +28,6 @@ from .onnx import ONNX
 import platform
 import config
 
-DEBUG=False
-
 def __ease_out_expo(sep):
     if sep == 1:
         return 1
@@ -214,6 +212,7 @@ class DataFetcher:
         driver.get(LOGIN_URL)
         logging.info(f"Open LOGIN_URL:{LOGIN_URL}.\r")
         time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
+
         # swtich to username-password login page
         driver.find_element(By.CLASS_NAME, "user").click()
         logging.info("find_element 'user'.\r")
@@ -279,9 +278,9 @@ class DataFetcher:
 
     def _fetch(self):
         """main logic here"""
-        if platform.system() == 'Windows':
-            driverfile_path = r'C:\Users\mxwang\Project\msedgedriver.exe'
-            driver = webdriver.Edge(executable_path=driverfile_path)
+        if config.DEBUG:
+            driverfile_path = r'C:\Program Files\chromeTest\chromedriver.exe'
+            driver = webdriver.Chrome(executable_path=driverfile_path)
         else:
             driver = self._get_webdriver()
         
@@ -290,14 +289,15 @@ class DataFetcher:
         logging.info("Webdriver initialized.")
 
         try:
-            if DEBUG:
+            if config.DEBUG:
                 driver.get(LOGIN_URL)
-                pass
+                time.sleep(10)
             else:
                 if self._login(driver):
                     logging.info("login successed !")
                 else:
                     logging.info("login unsuccessed !")
+                    raise Exception("login unsuccessed")
             logging.info(f"Login successfully on {LOGIN_URL}")
             time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
             user_id_list = self._get_user_ids(driver)
