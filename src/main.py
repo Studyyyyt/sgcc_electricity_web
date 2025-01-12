@@ -103,5 +103,7 @@ if __name__ == '__main__':
     scheduler.start()
 
     from waitress import serve
-    serve(app, host="0.0.0.0", port=config.web['port'])
-    # app.run(debug=False)
+    if config.DEBUG:
+        app.run(debug=True)
+    else:
+        serve(app, host="0.0.0.0", port=config.web['port'])

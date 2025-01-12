@@ -4,8 +4,9 @@ import platform
 import json
 
 VERSION = 'test version'
-with open("VERSION", "r") as file:
-    VERSION = file.readline()
+if os.path.exists('VERSION'):
+    with open("VERSION", "r") as file:
+        VERSION = file.readline()
 
 data = {}
 run_type = ''
@@ -23,6 +24,7 @@ elif os.path.exists('config.yaml'):
 
 DEBUG = False
 if platform.system() == 'Windows':
+    run_type = 'windows'
     DEBUG = True
 
 electricity = {
@@ -42,16 +44,18 @@ logger = {
     'level': data['logger'].get('level', 'INFO').upper()
 }
 
-data_path = data['data']['path'] if run_type = 'docker' else "/data"
+data_path = data['data']['path'] if run_type in ['docker', 'windows'] else "/data"
 os.makedirs(data_path, exist_ok=True) 
 
 web = {
-    'port': int(data['web'].get('port', '8080')) if run_type = 'docker' else 8080
+    'port': int(data['web'].get('port', '8080')) if run_type in ['docker', 'windows'] else 8080
 }
 
 if __name__ == '__main__':
     print('---VERSION---')
     print(VERSION)
+    print('---run_type---')
+    print(run_type)
     print('---electricity---')
     print(electricity)
     print('---db---')
