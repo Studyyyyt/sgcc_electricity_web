@@ -23,7 +23,9 @@ jobs:
           DOCKER_IMAGE=crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web
 
           VERSION=${GITHUB_REF/refs\/tags\//}
-          echo "Tag name is: $VERSION"
+          echo "VERSION is: $VERSION"
 
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com
+          docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --push .
+          
           docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --push .
