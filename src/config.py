@@ -1,11 +1,21 @@
 import yaml
 import os
 import platform
+import json
 
+VERSION = 'test version'
+with open("VERSION", "r") as file:
+    VERSION = file.readline()
+
+data = {}
+# docker
 with open("config.yaml", "r") as file:
     data = yaml.safe_load(file)
 
-VERSION = '0.0.2'
+# addons
+with open("/data/options.json", "r") as file:
+    data = json.load(file)
+
 DEBUG = False
 if platform.system() == 'Windows':
     DEBUG = True
