@@ -4,8 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV LANG=C.UTF-8
 
-ARG VERSION
-
 WORKDIR /app
 
 COPY src .
@@ -19,8 +17,7 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
     && rm -rf /var/lib/apt/lists/*  \
     && apt-get clean
 
-RUN echo ${VERSION} > VERSION
-    && cd /tmp \
+RUN cd /tmp \
     && pip config --global set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
     && pip config --global set install.trusted-host pypi.tuna.tsinghua.edu.cn \
     && python3 -m pip install --upgrade pip \
