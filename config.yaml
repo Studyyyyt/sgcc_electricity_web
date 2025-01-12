@@ -1,18 +1,16 @@
-name: "SGCC Electricity WEB"
-version: "0.0.2"
-slug: "sgcc_electricity_web"
-description: "国家电网电力获取-web server端"
-url: "https://github.com/Javedhd/sgcc_electricity_web"
+name: 'SGCC Electricity WEB'
+version: '0.0.2'
+slug: 'sgcc_electricity_web'
+description: '国家电网电力获取-web server端'
+url: 'https://github.com/Javedhd/sgcc_electricity_web'
 arch:
-  - aarch64
-  - amd64
-host_network: true
-startup: application
-boot: auto
+  - 'aarch64'
+  - 'amd64'
+host_network: false
+startup: 'application'
+boot: 'auto'
 init: false
-image: "crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web"
-map:
-  - config:rw
+image: 'crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web'
 options:
   electricity:
     phone_number: null 
@@ -34,20 +32,20 @@ options:
 
 schema:
   electricity:
-    phone_number: str 
-    password: str
-    deiver_impltcity_wait_time: int
-    retry_times_limit: int
-    login_expected_time: int
-    retry_wait_time_offset_unit: int
-    data_retention_days: int
-    ignore_user_id: list?
+    phone_number: 'str' 
+    password: 'password'
+    deiver_impltcity_wait_time: 'int'
+    retry_times_limit: 'int'
+    login_expected_time: 'int'
+    retry_wait_time_offset_unit: 'int'
+    data_retention_days: 'int'
+    ignore_user_id: 'list?'
 
   db:
-    name: str
+    name: 'str'
 
   logger:
-    level: str
+    level: 'str'
 
   data:
-    path: str
+    path: 'str'
