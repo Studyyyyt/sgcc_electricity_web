@@ -1,5 +1,5 @@
 name: 'SGCC Electricity WEB'
-version: '0.0.2'
+version: '0.0.3'
 slug: 'sgcc_electricity_web'
 description: '国家电网电力获取-web server端'
 url: 'https://github.com/Javedhd/sgcc_electricity_web'
@@ -28,9 +28,6 @@ options:
   logger:
     level: 'info'
 
-  data:
-    path: '/data'
-
 schema:
   electricity:
     phone_number: 'str' 
@@ -47,6 +44,3 @@ schema:
 
   logger:
     level: 'str'
-
-  data:
-    path: 'str'
