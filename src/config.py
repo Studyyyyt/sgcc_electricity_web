@@ -44,11 +44,11 @@ logger = {
     'level': data['logger'].get('level', 'INFO').upper()
 }
 
-data_path = data['data']['path'] if run_type in ['docker', 'windows'] else "/addon_config"
+data_path = "/config" if run_type == 'add-ones' else data['data']['path']
 os.makedirs(data_path, exist_ok=True) 
 
 web = {
-    'port': int(data['web'].get('port', '8080')) if run_type in ['docker', 'windows'] else 8080
+    'port': 8080 if run_type == 'add-ones' else int(data['web'].get('port', '8080'))
 }
 
 if __name__ == '__main__':
