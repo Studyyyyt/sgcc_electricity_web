@@ -44,7 +44,7 @@ logger = {
     'level': data['logger'].get('level', 'INFO').upper()
 }
 
-data_path = data['data']['path'] if run_type in ['docker', 'windows'] else "/data"
+data_path = data['data']['path'] if run_type in ['docker', 'windows'] else "/addon_config"
 os.makedirs(data_path, exist_ok=True) 
 
 web = {

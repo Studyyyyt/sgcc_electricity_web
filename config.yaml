@@ -10,6 +10,9 @@ host_network: false
 startup: 'application'
 boot: 'auto'
 init: false
+map:
+  - type: addon_config 
+    read_only: False
 image: 'crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web'
 options:
   electricity:
