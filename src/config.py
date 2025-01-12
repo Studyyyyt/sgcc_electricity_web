@@ -8,14 +8,17 @@ with open("VERSION", "r") as file:
     VERSION = file.readline()
 
 data = {}
+run_type = ''
 if os.path.exists('/data/options.json'):
     # addons
     with open("/data/options.json", "r") as file:
         data = json.load(file)
+    run_type = 'add-ones'
 elif os.path.exists('config.yaml'):
     # docker
     with open("config.yaml", "r") as file:
         data = yaml.safe_load(file)
+    run_type = 'docker'
     
 
 DEBUG = False
@@ -39,11 +42,11 @@ logger = {
     'level': data['logger'].get('level', 'INFO').upper()
 }
 
-data_path = data['data']['path']
+data_path = data['data']['path'] if run_type = 'docker' else "/data"
 os.makedirs(data_path, exist_ok=True) 
 
 web = {
-    'port': int(data['web'].get('port', '8080'))
+    'port': int(data['web'].get('port', '8080')) if run_type = 'docker' else 8080
 }
 
 if __name__ == '__main__':

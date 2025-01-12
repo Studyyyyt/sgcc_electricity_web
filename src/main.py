@@ -82,7 +82,7 @@ def index():
     return 'Hello, World!'
 
 if __name__ == '__main__':
-    logging.info(f"The current version: {config.VERSION}")
+    logging.info(f"The current version: {config.VERSION}, run type is: {config.run_type}")
 
     parser = argparse.ArgumentParser(description='sgcc electricity web args')
     parser.add_argument("-r", "--run", action = "store_true")
