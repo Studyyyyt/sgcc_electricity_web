@@ -1,0 +1,30 @@
+name: Docker Image Build
+
+on:  
+  push:
+    tags:
+      - *
+
+jobs:
+  buildx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 'tags'
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push Docker image
+        run: |
+          PLATFORMS=linux/arm64,linux/amd64
+          DOCKER_IMAGE=crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web
+
+          tag_name=${GITHUB_REF/refs\/tags\//}
+          echo "Tag name is: $tag_name"
+          VERSION=${{ tag_name }}
+
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com
+          docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --push .

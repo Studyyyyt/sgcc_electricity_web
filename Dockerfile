@@ -1,7 +1,10 @@
 FROM python:3.9-bullseye
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8
+
+ARG VERSION
 
 WORKDIR /app
 
@@ -16,11 +19,11 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
     && rm -rf /var/lib/apt/lists/*  \
     && apt-get clean
 
-RUN cd /tmp \
+RUN echo ${VERSION} > VERSION
+    && cd /tmp \
     && pip config --global set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
     && pip config --global set install.trusted-host pypi.tuna.tsinghua.edu.cn \
     && python3 -m pip install --upgrade pip \
-    && PIP_ROOT_USER_ACTION=ignore pip install onnxruntime==1.17.3 \
     && PIP_ROOT_USER_ACTION=ignore pip install \
     --disable-pip-version-check \
     --no-cache-dir \
@@ -29,7 +32,5 @@ RUN cd /tmp \
     && pip cache purge \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/log/*
-
-ENV LANG C.UTF-8
 
 CMD ["python", "main.py"]

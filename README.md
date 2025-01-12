@@ -34,6 +34,7 @@ electricity:
   retry_wait_time_offset_unit: 10
   data_retention_days: 7                # 记录的天数, 仅支持填写 7 或 30
                                         # 国网原本可以记录 30 天,现在不开通智能缴费只能查询 7 天造成错误
+  ignore_user_id: []                    # 忽略的用户id
 
 db:
   name: 'homeassistant.db'              # sqlite3数据库文件名称
@@ -78,14 +79,22 @@ sgcc_electricity_web | 2024-12-31 14:04:59,683 [INFO    ] Serving on http://0.0.
   "1200**********"
 ]
 ```
-2. 查询用户电费余额: /electricity/balance/{userId}
+2. 查询用户信息: /electricity/user_info/{userId}
+``` json
+{
+  "balance": 67.15,
+  "location": "北京市************1号1单元",
+  "updateTime": "2025-01-07 22:38:38"
+}
+```
+3. 查询用户电费余额: /electricity/balance/{userId}
 ``` json
 {
   "balance": 108.52,
   "updateTime": "2024-12-31 07:04:01"
 }
 ```
-3. 查询用户近7天电费使用情况: /electricity/dailys/{userId}
+4. 查询用户近7天电费使用情况: /electricity/dailys/{userId}
 ``` json
 [
   {
@@ -118,7 +127,7 @@ sgcc_electricity_web | 2024-12-31 14:04:59,683 [INFO    ] Serving on http://0.0.
   }
 ]
 ```
-4. 查询用户上月电费使用情况: /electricity/latest_month/{userId}
+5. 查询用户上月电费使用情况: /electricity/latest_month/{userId}
 ``` json
 {
   "charge": 152.88,
@@ -126,7 +135,7 @@ sgcc_electricity_web | 2024-12-31 14:04:59,683 [INFO    ] Serving on http://0.0.
   "usage": 284
 }
 ```
-5. 查询用户今年电费使用情况: /electricity/this_year/{userId}
+6. 查询用户今年电费使用情况: /electricity/this_year/{userId}
 ``` json
 {
   "charge": 2046.35,
