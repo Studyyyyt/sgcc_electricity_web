@@ -8,14 +8,15 @@ with open("VERSION", "r") as file:
     VERSION = file.readline()
 
 data = {}
-if os.path.exists('config.yaml'):
-    # docker
-    with open("config.yaml", "r") as file:
-        data = yaml.safe_load(file)
-elif os.path.exists('/data/options.json'):
+if os.path.exists('/data/options.json'):
     # addons
     with open("/data/options.json", "r") as file:
         data = json.load(file)
+elif os.path.exists('config.yaml'):
+    # docker
+    with open("config.yaml", "r") as file:
+        data = yaml.safe_load(file)
+    
 
 DEBUG = False
 if platform.system() == 'Windows':
@@ -46,6 +47,8 @@ web = {
 }
 
 if __name__ == '__main__':
+    print('---VERSION---')
+    print(VERSION)
     print('---electricity---')
     print(electricity)
     print('---db---')
