@@ -20,6 +20,7 @@ options:
     login_expected_time: 60
     retry_wait_time_offset_unit: 10
     data_retention_days: 7
+    ignore_user_id: []
 
   db:
     name: 'homeassistant.db'
