@@ -1,0 +1,42 @@
+name: 报告问题
+description: 报告问题
+body:
+  - type: input
+    id: version
+    validations:
+      required: true
+    attributes:
+      label:  您目前使用的版本是什么？
+      description: '版本可在日志中查到，类似: "The current version: "'
+  - type: input
+    validations:
+      required: true
+    id: installation
+    attributes:
+      label: 您使用的是哪种安装方式？
+      description: 如：docker、add-ones
+  - type: input
+    validations:
+      required: true
+    id: system
+    attributes:
+      label: 运行本项目的操作系统是什么?
+      description: 如：CentOS、群晖、斐讯N1
+  - type: input
+    validations:
+      required: false
+    attributes:
+      label: Home Assistant core版本是什么?
+      description: 可在设置中的关于Home Assistant中查看
+  - type: textarea
+    id: logs
+    attributes:
+      label: 是否有报错的相关日志
+      description: docker logs -f sgcc_electricity_web / add-ones中的日志
+  - type: textarea
+    validations:
+      required: true
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 在此描述您遇到的问题，以便与维护者沟通。告诉我们您正在尝试做什么，以及发生了什么。

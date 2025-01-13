@@ -1,5 +1,5 @@
 name: 'SGCC Electricity WEB'
-version: '0.0.3'
+version: '0.0.4'
 slug: 'sgcc_electricity_web'
 description: '国家电网电力获取-web server端'
 url: 'https://github.com/Javedhd/sgcc_electricity_web'
@@ -10,6 +10,8 @@ host_network: false
 startup: 'application'
 boot: 'auto'
 init: false
+ports:
+  8080/tcp: 8080
 map:
   - type: addon_config 
     read_only: False
@@ -42,6 +44,7 @@ schema:
     data_retention_days: 'int'
     ignore_user_id:
       - 'str?'
+    cron_hour: str
 
   db:
     name: 'str'

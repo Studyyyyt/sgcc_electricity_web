@@ -39,7 +39,7 @@ app = Flask(__name__, static_folder='static')
 scheduler = APScheduler()
 
 
-@scheduler.task('cron', id='fetch_electricity_task', hour='7,19', misfire_grace_time=900)
+@scheduler.task('cron', id='fetch_electricity_task', hour=config.electricity['cron_hour'], misfire_grace_time=900)
 def fetch_electricity_task():
     try:
         data = fetcher.fetch()

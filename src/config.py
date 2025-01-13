@@ -6,7 +6,7 @@ import json
 VERSION = 'test version'
 if os.path.exists('VERSION'):
     with open("VERSION", "r") as file:
-        VERSION = file.readline()
+        VERSION = file.readline().replace('\n', '').replace('\r', '').strip()
 
 data = {}
 run_type = ''
@@ -36,6 +36,7 @@ electricity = {
     ,'retry_wait_time_offset_unit': int(data['electricity'].get('retry_wait_time_offset_unit', '10'))
     ,'data_retention_days': int(data['electricity'].get('data_retention_days', '7'))
     ,'ignore_user_id': data['electricity'].get('ignore_user_id', [])
+    ,'cron_hour': data['electricity'].get('cron_hour', '7,19')
 }
 
 db = data['db']

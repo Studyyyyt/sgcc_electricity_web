@@ -7,6 +7,7 @@ electricity:
   retry_wait_time_offset_unit: 10
   data_retention_days: 7
   ignore_user_id: []
+  cron_hour: '7,19'
 
 db:
   name: 'homeassistant.db'
