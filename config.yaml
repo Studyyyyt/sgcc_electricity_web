@@ -44,7 +44,7 @@ schema:
     data_retention_days: 'int'
     ignore_user_id:
       - 'str?'
-    cron_hour: str
+    cron_hour: str?
 
   db:
     name: 'str'
