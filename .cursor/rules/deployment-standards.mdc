@@ -1,0 +1,131 @@
+---
+description: "部署标准和最佳实践"
+---
+
+# 国家电网监控系统部署标准
+
+## 部署架构要求
+
+### 网络拓扑
+```
+Web服务主机(192.168.1.21:8080) ← HTTP API → HA主机(192.168.1.62) → Home Assistant界面
+```
+
+### 端口和服务
+- **Web服务端口**: 8080
+- **协议**: HTTP REST API
+- **数据格式**: JSON
+- **更新频率**: 每5分钟检查一次，每天7点和19点自动抓取
+
+## Docker部署标准
+
+### 目录结构
+```
+/volume1/docker/guojiadianwang/sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/
+├── docker-compose.yml
+├── config.yaml
+├── data/                 # 数据存储目录
+└── logs/                # 日志目录(可选)
+```
+
+### 必需环境变量
+```yaml
+environment:
+  - SET_CONTAINER_TIMEZONE=true
+  - CONTAINER_TIMEZONE=Asia/Shanghai
+```
+
+### 数据持久化
+```yaml
+volumes:
+  - ./data:/data                    # 数据库存储
+  - ./config.yaml:/app/config.yaml  # 配置文件
+```
+
+## Home Assistant集成部署
+
+### 文件部署位置
+```
+/config/custom_components/sgcc_electricity_client/
+├── __init__.py
+├── config_flow.py
+├── const.py
+├── coordinator.py
+├── electricity.py        # 核心数据处理文件(已修复)
+├── manifest.json
+├── sensor.py
+├── strings.json
+└── utils/
+    ├── logger.py
+    └── store.py
+```
+
+### 权限设置
+```bash
+chmod -R 755 /config/custom_components/sgcc_electricity_client
+chown -R homeassistant:homeassistant /config/custom_components/sgcc_electricity_client
+```
+
+## 部署验证清单
+
+### 阶段1: Web服务部署验证
+- [ ] Docker容器正常运行: `docker-compose ps`
+- [ ] 服务端口监听: `netstat -tlnp | grep 8080`
+- [ ] 配置文件加载: 检查日志无KeyError
+- [ ] 登录成功: 日志显示"Login successfully"
+- [ ] 用户发现: 日志显示"users in total"
+
+### 阶段2: 数据抓取验证
+- [ ] API返回用户列表: `curl http://IP:8080/v1/electricity/user_list`
+- [ ] 单户号数据正常: `curl http://IP:8080/v1/electricity/balance/户号`
+- [ ] 所有户号处理完成: 日志显示"state-refresh task run successfully"
+- [ ] 数据库文件创建: 检查data目录下的.db文件
+
+### 阶段3: HA集成验证
+- [ ] 集成文件部署完整: 检查所有必需文件存在
+- [ ] HA重启后集成可见: 在"添加集成"中能搜索到
+- [ ] 集成配置成功: 无no_user或cannot_connect错误
+- [ ] 设备创建正常: 每个户号对应一个设备
+- [ ] 传感器数据正常: 每个设备有6个传感器且有数据
+
+## 性能和监控要求
+
+### 资源使用
+- **内存**: Web服务约100-200MB
+- **CPU**: 数据抓取时短暂高负载，平时低负载
+- **存储**: 数据库文件约10-50MB
+- **网络**: 每次抓取约1-5MB流量
+
+### 监控指标
+1. **Web服务可用性**: HTTP 200响应
+2. **数据新鲜度**: refresh_time更新频率
+3. **错误率**: 日志中ERROR级别消息
+4. **响应时间**: API调用响应时间
+
+## 安全要求
+
+### 访问控制
+- Web服务仅内网访问
+- 使用防火墙限制8080端口访问来源
+- 定期更新国家电网账号密码
+
+### 数据保护
+- 配置文件权限设置为644
+- 敏感信息不记录在日志中
+- 定期备份数据库文件
+
+## 维护计划
+
+### 日常维护
+- 每日检查日志错误
+- 每周检查数据完整性
+- 每月备份配置和数据
+
+### 更新策略
+- 关注项目GitHub更新
+- 测试环境验证后再部署到生产
+- 保留旧版本配置文件备份
+
+参考文档:
+- [Home_Assistant_部署计划.md](mdc:Home_Assistant_部署计划.md)
+- [错误处理预案.md](mdc:错误处理预案.md)

@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+
+# 国家电网电费监控系统项目结构指南
+
+## 项目概述
+本项目包含两个主要组件：
+- **Web服务**: [sgcc_electricity_web-0.0.4/](mdc:sgcc_electricity_web-0.0.4/) - 后端数据采集服务
+- **HA集成**: [sgcc_electricity_client/](mdc:sgcc_electricity_client/) - Home Assistant集成组件
+
+## 核心配置文件
+- Web服务配置: [sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/src/config.yaml](mdc:sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/src/config.yaml)
+- Docker配置: [sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/docker-compose.yml](mdc:sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/docker-compose.yml)
+- HA集成清单: [sgcc_electricity_client/custom_components/sgcc_electricity_client/manifest.json](mdc:sgcc_electricity_client/custom_components/sgcc_electricity_client/manifest.json)
+
+## 关键文档
+- 部署指南: [Home_Assistant_部署计划.md](mdc:Home_Assistant_部署计划.md)
+- 错误处理: [错误处理预案.md](mdc:错误处理预案.md)
+
+## 部署架构
+```
+Web服务(192.168.1.21:8080) ← HTTP API → HA集成(192.168.1.62) → Home Assistant
+```
+
+## 数据流程
+1. Web服务登录国家电网官网
+2. 抓取5个户号的电费数据
+3. 存储到SQLite数据库
+4. 通过REST API提供数据
+5. HA集成调用API创建传感器
+6. 在Home Assistant中显示电费信息

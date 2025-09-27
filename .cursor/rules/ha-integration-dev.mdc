@@ -1,0 +1,61 @@
+---
+globs: "**/sgcc_electricity_client/**/*.py"
+---
+
+# Home Assistant集成开发规范
+
+## 代码质量要求
+1. **错误处理**: 所有API调用必须包含完整的异常处理
+2. **数据完整性**: 使用 `.get()` 方法安全获取字典数据，避免KeyError
+3. **日志记录**: 使用 `LOGGER.error()` 和 `LOGGER.warning()` 记录详细错误信息
+
+## 关键修复模式
+参考 [sgcc_electricity_client/custom_components/sgcc_electricity_client/electricity.py](mdc:sgcc_electricity_client/custom_components/sgcc_electricity_client/electricity.py) 中的修复：
+
+```python
+# ✅ 正确的API调用模式
+async def async_get_balance(self, user_id):
+    try:
+        r = await self._session.get(url, timeout=10)
+        if r.status == 200:
+            result = json.loads(await r.read())
+            self._data[user_id]["balance"] = result.get('balance', 0)
+            self._data[user_id]["refresh_time"] = result.get('updateTime', 'unknown')
+        else:
+            LOGGER.warning(f"Balance API failed for {user_id}: HTTP {r.status}")
+            self._data[user_id]["balance"] = None
+            self._data[user_id]["refresh_time"] = 'unavailable'
+    except Exception as e:
+        LOGGER.error(f"Balance API error for {user_id}: {e}")
+        self._data[user_id]["balance"] = None
+        self._data[user_id]["refresh_time"] = 'error'
+```
+
+## 数据结构初始化
+确保完整的数据结构初始化，防止部分户号传感器缺失问题：
+
+```python
+# 初始化完整的数据结构
+self._data[user_id] = {
+    "balance": None,
+    "year_ele_num": None,
+    "year_ele_cost": None,
+    "last_month_ele_num": None,
+    "last_month_ele_cost": None,
+    "refresh_time": None,
+    "dailys": []
+}
+```
+
+## 避免的反模式
+❌ 不要直接访问字典键：
+```python
+# 错误 - 可能导致KeyError
+self._data[user_id]["balance"] = result['balance']
+```
+
+✅ 使用安全的字典访问：
+```python
+# 正确 - 安全的字典访问
+self._data[user_id]["balance"] = result.get('balance', 0)
+```

@@ -1,0 +1,118 @@
+---
+description: "故障排除和错误处理指南"
+---
+
+# 国家电网监控系统故障排除规范
+
+## 常见错误类型及解决方案
+
+### 1. no_user 错误
+**错误现象**: HA集成配置时显示"未查询到内容,请检查国家电网web服务器可正常获取数据"
+
+**根本原因**: Web服务的用户列表API返回空数组 `[]`
+
+**解决步骤**:
+```bash
+# 1. 检查Web服务API
+curl http://192.168.1.21:8080/v1/electricity/user_list
+
+# 2. 查看Web服务日志
+cd /volume1/docker/guojiadianwang/sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4
+docker-compose logs --tail=50 app
+
+# 3. 等待数据抓取完成(通常15-30分钟)
+docker-compose logs -f app | grep -E "(Login|users in total|successfully)"
+```
+
+### 2. 部分户号传感器异常
+**错误现象**: 某些户号传感器显示"不可用"或数据缺失
+
+**排查步骤**:
+```bash
+# 测试特定户号API接口
+curl http://192.168.1.21:8080/v1/electricity/balance/户号
+curl http://192.168.1.21:8080/v1/electricity/this_year/户号
+
+# 查看特定户号的错误日志
+docker-compose logs app | grep "户号" | grep -E "(error|failed)"
+
+# 检查数据结构完整性
+curl -v http://192.168.1.21:8080/v1/electricity/balance/户号
+```
+
+**解决方案**: 参考 [sgcc_electricity_client/custom_components/sgcc_electricity_client/electricity.py](mdc:sgcc_electricity_client/custom_components/sgcc_electricity_client/electricity.py) 中的代码修复
+
+### 3. 容器启动冲突
+**错误现象**: `container name "/sgcc_electricity_web" is already in use`
+
+**解决方法**:
+```bash
+# 停止并删除现有容器
+docker stop sgcc_electricity_web
+docker rm sgcc_electricity_web
+
+# 或使用docker-compose清理
+docker-compose down
+docker-compose up -d
+```
+
+### 4. 配置文件错误
+**错误现象**: `KeyError: 'electricity'` 或 YAML格式错误
+
+**解决步骤**:
+```bash
+# 验证YAML格式
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
+
+# 检查必需配置项
+cat config.yaml | grep -E "(phone_number|password|electricity)"
+```
+
+## 系统监控检查清单
+
+### Web服务健康检查
+- [ ] 服务状态: `docker-compose ps`
+- [ ] API响应: `curl http://IP:8080/v1/electricity/user_list`
+- [ ] 登录状态: 查看日志中的"Login successfully"
+- [ ] 数据抓取: 查看"users in total"和"successfully"日志
+
+### 网络连通性检查
+- [ ] 基础连通性: `ping 192.168.1.21`
+- [ ] 端口可达性: `telnet 192.168.1.21 8080`
+- [ ] HTTP响应: `curl -I http://192.168.1.21:8080`
+- [ ] 防火墙状态: 确保8080端口开放
+
+### Home Assistant集成检查
+- [ ] 集成加载: 检查设备与服务页面
+- [ ] 传感器状态: 查看传感器数据更新时间
+- [ ] HA日志: `grep -i "sgcc" /config/home-assistant.log`
+- [ ] 实体数量: 应有5个设备，每个设备6个传感器
+
+## 预防措施
+
+### 定期维护
+1. **日志监控**: 设置日志轮转，定期清理旧日志
+2. **数据备份**: 定期备份数据库文件
+3. **配置备份**: 保存配置文件副本
+4. **更新检查**: 关注项目GitHub更新
+
+### 监控告警
+在Home Assistant中设置自动化监控：
+```yaml
+automation:
+  - alias: "电费数据获取失败告警"
+    trigger:
+      - platform: state
+        entity_id: sensor.electricity_户号_refresh_time
+        to: "unavailable"
+        for:
+          minutes: 30
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          message: "电费数据获取失败，请检查服务状态"
+```
+
+## 参考文档
+- 完整故障排除指南: [错误处理预案.md](mdc:错误处理预案.md)
+- 部署指南: [Home_Assistant_部署计划.md](mdc:Home_Assistant_部署计划.md)

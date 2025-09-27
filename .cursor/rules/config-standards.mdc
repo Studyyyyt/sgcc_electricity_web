@@ -1,0 +1,60 @@
+---
+globs: "**/*.yaml,**/*.yml"
+---
+
+# 配置文件规范
+
+## Docker Compose配置标准
+- 服务名: `sgcc_electricity_web`
+- 端口映射: `8080:8080`
+- 时区设置: `Asia/Shanghai`
+- 配置文件挂载: `./config.yaml:/app/config.yaml`
+- 重启策略: `unless-stopped`
+
+## Web服务配置结构
+参考 [sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/src/config.yaml](mdc:sgcc_electricity_web-0.0.4/sgcc_electricity_web-0.0.4/src/config.yaml)
+
+```yaml
+electricity:
+  phone_number: "手机号"          # 国家电网登录手机号
+  password: "密码"               # 国家电网登录密码
+  deiver_impltcity_wait_time: 60 # 浏览器等待时间(秒)
+  retry_times_limit: 5           # 重试次数限制
+  login_expected_time: 60        # 登录预期时间(秒)
+  retry_wait_time_offset_unit: 10 # 重试等待时间单位(秒)
+  data_retention_days: 7         # 数据保留天数
+  ignore_user_id: []             # 忽略有问题的户号列表
+  cron_hour: '7,19'              # 定时抓取时间(每天7点和19点)
+
+db:
+  name: 'homeassistant.db'       # 数据库文件名
+
+logger:
+  level: 'info'                  # 日志级别(debug/info/warning/error)
+
+data:
+  path: '/data'                  # 数据存储路径
+
+web:
+  port: 8080                     # Web服务端口
+```
+
+## 安全配置要求
+1. **敏感信息保护**: 
+   - 不要在配置文件中硬编码密码
+   - 使用环境变量或secrets文件
+   - 定期更新访问凭据
+
+2. **网络安全**:
+   - 确保8080端口只对内网开放
+   - 使用防火墙限制访问来源
+
+3. **数据保护**:
+   - 定期备份数据库文件
+   - 设置合理的数据保留期限
+
+## 配置验证
+使用以下命令验证YAML格式：
+```bash
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
+```
