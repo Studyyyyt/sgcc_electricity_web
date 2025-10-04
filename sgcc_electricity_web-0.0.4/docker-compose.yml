@@ -1,17 +1,91 @@
+# Docker Compose 版本声明
 version: "3"
 
 services:
+  # ==================== 主应用服务 ====================
   app:
+    # 使用官方提供的国家电网电费监控镜像
     image: crpi-djdbf2lzhff05hy6.cn-beijing.personal.cr.aliyuncs.com/javedhb/sgcc_electricity_web:latest
+    
+    # 容器名称，便于管理和日志查看
     container_name: sgcc_electricity_web
+    
+    # 端口映射：宿主机8080端口 -> 容器8080端口
+    # 访问地址：http://localhost:8080
     ports:
       - 8080:8080
+    
+    # 环境变量配置
     environment:
+      # 启用容器时区设置
       - SET_CONTAINER_TIMEZONE=true
+      # 设置容器时区为上海时区（东八区）
       - CONTAINER_TIMEZONE=Asia/Shanghai
-    restart: unless-stopped
+    
+    # 重启策略：设置为不自动重启，由调度器控制重启
+    # "no": 不自动重启
+    # "unless-stopped": 除非手动停止，否则总是重启
+    # "always": 总是重启
+    # "on-failure": 仅在失败时重启
+    restart: "no"
+    
+    # 数据卷映射
     volumes:
-      #- ./src:/app
+      # 数据持久化：宿主机./data目录 -> 容器/data目录
+      # 用于存储SQLite数据库文件
       - ./data:/data
+      
+      # 配置文件映射：宿主机./config.yaml -> 容器/app/config.yaml
+      # 程序读取此配置文件获取登录信息等设置
       - ./config.yaml:/app/config.yaml
-    command: python3 main.py
+    
+    # 容器启动命令：每次启动都执行初始化
+    # -r 参数：强制执行数据抓取，不等待定时任务
+    command: python3 main.py -r
+
+  # ==================== 定时调度服务 ====================
+  scheduler:
+    # 使用 Ofelia 镜像提供 cron 定时任务功能
+    # Ofelia 是一个专门用于 Docker 环境的 cron 调度器
+    image: mcuadros/ofelia:latest
+    
+    # 调度器容器名称
+    container_name: sgcc_scheduler
+    
+    # 依赖关系：确保主应用服务先启动
+    depends_on:
+      - app
+    
+    # 启动命令：以 daemon 模式运行，监控 Docker 事件
+    command: daemon --docker
+    
+    # 挂载 Docker socket，允许调度器控制其他容器
+    # 这是 Ofelia 能够重启其他容器的关键配置
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    
+    # 定时任务配置（通过 labels 定义）
+    labels:
+      # 定时任务名称：restart-sgcc
+      # 执行计划：每天7点和19点执行（cron格式）
+      # 格式说明：分 时 日 月 周
+      # "0 7,19 * * *" = 每天的7:00和19:00执行
+      ofelia.job-exec.restart-sgcc.schedule: "0 7,19 * * *"
+      
+      # 执行的命令：重启主应用容器
+      # 重启后容器会自动执行初始化（因为有-r参数）
+      ofelia.job-exec.restart-sgcc.command: "docker restart sgcc_electricity_web"
+    
+    # 调度器重启策略：除非手动停止，否则保持运行
+    restart: unless-stopped
+
+# ==================== 网络配置 ====================
+# 使用默认网络，两个服务可以相互通信
+
+# ==================== 数据卷配置 ====================
+# 使用本地目录映射，无需额外声明 volumes
+
+
+
+# 手动触发数据抓取
+#docker-compose restart app
